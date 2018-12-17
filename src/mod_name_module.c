@@ -28,14 +28,14 @@ mod_name_func1(PyObject *self, PyObject *args)
 	 * responsible decrease the descriptors reference count by using Py_DECREF on your arry
 	 * pointer
 	 */
-	arr_x = (PyArrayObject *)PyArray_FROM_OTF(py_x, NPY_LONGDOUBLE, NPY_ARRAY_IN_ARRAY);
+	arr_x = (PyArrayObject *) PyArray_FROM_OTF(py_x, NPY_LONGDOUBLE, NPY_ARRAY_IN_ARRAY);
 	if (arr_x == NULL) return NULL;
 
 	/* get array attributes, e.g., element count ... */
-	int		n		= (int) PyArray_SIZE(arr_x);
+	int	n = (int) PyArray_SIZE(arr_x);
 
 	/* Obtain a pointer to the data buffer of the array */
-	double	*data	= (double *) PyArray_DATA(arr_x);
+	double *data = (double *) PyArray_DATA(arr_x);
 
 	/* 
 	 * do your stuff
@@ -63,7 +63,7 @@ mod_name_module = {
 };
 
 
-	PyMODINIT_FUNC
+PyMODINIT_FUNC
 PyInit_mod_name(void)
 {
 	import_array();
