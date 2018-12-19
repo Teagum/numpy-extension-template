@@ -15,7 +15,7 @@ mod_name_func1(PyObject *self, PyObject *args)
 	/* Parse the argument list unsing specific format strings. There is, however,
 	 * not format string for numpy arrays. That's why we need to parse the input
 	 * as an generic PythonObject using the "O" format string.*/
-	if (!PyArg_ParseTuple(args, "O", &py_x))
+	if (!PyArg_ParseTuple (args, "O", &py_x))
 		return NULL;
 
 	/* As PyArg_ParseTuple returns a PyObject, we have to reinterpret it as
@@ -28,25 +28,36 @@ mod_name_func1(PyObject *self, PyObject *args)
 	 * responsible decrease the descriptors reference count by using Py_DECREF on your arry
 	 * pointer
 	 */
-	arr_x = (PyArrayObject *) PyArray_FROM_OTF(py_x, NPY_LONGDOUBLE, NPY_ARRAY_IN_ARRAY);
+	arr_x = (PyArrayObject *) PyArray_FROM_OTF (py_x, NPY_LONGDOUBLE, NPY_ARRAY_IN_ARRAY);
 	if (arr_x == NULL) return NULL;
 
 	/* get array attributes, e.g., element count ... */
-	int	n = (int) PyArray_SIZE(arr_x);
+	npy_intp N = PyArray_SIZE(arr_x);
 
 	/* Obtain a pointer to the data buffer of the array */
-	double *data = (double *) PyArray_DATA(arr_x);
+	double *data = (double *) PyArray_DATA (arr_x);
+
+	/* Dynamically allocate memory just for the sake of it */
+	double *X_train = malloc (((size_t) N) * sizeof (double));
+	for (size_t i = 0; i < N; i++)
+		X_train[i] = (double) i*i;
+
+	/* Create an array wrapper around the allocated memory */
+	npy_intp dims[] = {2, 5};
+	PyObject *out = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, X_train);
 
 	/* 
-	 * do your stuff
+	 * do some more stuff
 	 */
 
 	/* Clean up your array objects */
-	Py_DECREF(arr_x);
+	Py_DECREF (arr_x);
 
 	/* Build return values */
-	PyObject *ret = Py_BuildValue("i", 1);
-	return ret;
+	PyObject *val = Py_BuildValue ("O", out);
+
+	free(X_train);
+	return val;
 }
 
 
