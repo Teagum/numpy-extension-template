@@ -6,16 +6,13 @@
 static PyObject *
 mod_name_func1(PyObject *self, PyObject *args)
 {
-	/* Local representation of the input as Python Object */
-	PyObject *py_x = NULL;
-
-	/* Local representation as an array array */
-	PyArrayObject *arr_x = NULL;
+	/* Local representation of the args that come from Python */
+	PyObject *X_from_python = NULL;
 
 	/* Parse the argument list unsing specific format strings. There is, however,
 	 * not format string for numpy arrays. That's why we need to parse the input
 	 * as an generic PythonObject using the "O" format string.*/
-	if (!PyArg_ParseTuple (args, "O", &py_x))
+	if (!PyArg_ParseTuple (args, "O", &X_from_python))
 		return NULL;
 
 	/* As PyArg_ParseTuple returns a PyObject, we have to reinterpret it as
@@ -28,35 +25,54 @@ mod_name_func1(PyObject *self, PyObject *args)
 	 * responsible decrease the descriptors reference count by using Py_DECREF on your arry
 	 * pointer
 	 */
-	arr_x = (PyArrayObject *) PyArray_FROM_OTF (py_x, NPY_LONGDOUBLE, NPY_ARRAY_IN_ARRAY);
-	if (arr_x == NULL) return NULL;
+	PyArrayObject *X_numpy = (PyArrayObject *) PyArray_FROM_OTF (X_from_python, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);
+	if (X_numpy == NULL) return NULL;
 
 	/* get array attributes, e.g., element count ... */
-	npy_intp N = PyArray_SIZE(arr_x);
+	npy_intp N = PyArray_SIZE(X_numpy);
 
 	/* Obtain a pointer to the data buffer of the array */
-	double *data = (double *) PyArray_DATA (arr_x);
+	double *X_np_data = (double *) PyArray_DATA (X_numpy);
 
-	/* Dynamically allocate memory just for the sake of it */
-	double *X_train = malloc (((size_t) N) * sizeof (double));
-	for (size_t i = 0; i < N; i++)
-		X_train[i] = (double) i*i;
+	/* Print out data from Python */
+	puts("\nData received from Python:");
+	for (npy_intp i = 0; i < N; i++)
+	{
+		fprintf(stdout, "%5.3f\t", X_np_data[i]);
+		fflush(stdout);
+	}
 
-	/* Create an array wrapper around the allocated memory */
-	npy_intp dims[] = {2, 5};
-	PyObject *out = PyArray_SimpleNewFromData (2, dims, NPY_DOUBLE, X_train);
+	/* Dynamically allocate memory for a C array just for the sake of it */
+	double *X_carray = malloc (N * sizeof (double));
+	if (X_carray == NULL) return NULL;
+	
+	for (npy_intp i = 0; i < N; i++)
+		X_carray[i] = (double) i * i;
 
+	/* Create an array wrapper around the allocated memory.
+	 * dims sets the number of elements in each of nd dimensions.  */
+	int nd = 2;
+	npy_intp dims[] = {2, 3};
+	PyObject *out = PyArray_SimpleNewFromData (nd, dims, NPY_DOUBLE, X_carray);
+
+	double *X_ca_data = PyArray_DATA ((PyArrayObject *) out);
+	puts("\nData int wrapper:");
+	for (npy_intp i = 0; i < N; i++)
+	{
+		fprintf(stdout, "%5.3f\t", X_ca_data[i]);
+		fflush(stdout);
+	}
 	/* 
 	 * do some more stuff
 	 */
 
 	/* Clean up your array objects */
-	Py_DECREF (arr_x);
 
 	/* Build return values */
 	PyObject *val = Py_BuildValue ("O", out);
 
-	free(X_train);
+	free(X_carray);
+	Py_DECREF (X_numpy);
 	return val;
 }
 
